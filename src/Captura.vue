@@ -158,8 +158,6 @@ export default {
             pontuacao_atual -= this.desconta_por_regiao();
             pontuacao_atual -= parseInt(this.desconta_por_idade());
 
-            console.log( pontuacao_atual);
-
             return pontuacao_atual;
         },
 
