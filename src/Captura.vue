@@ -8,6 +8,11 @@
                         Preencha seus dados para receber contato
                     </div>
                 </div>
+
+                <div v-if="sucesso" class="alert alert-success">
+                    Dados enviados com sucesso! Em breve entraremos em contato.
+                </div>
+
                 <div class="panel-body">
                     <fieldset v-if="passo == 1">
                         <div class="row form-group">
@@ -19,7 +24,7 @@
 
                             <div class="col-lg-6 valid">
                                 <label>Data de Nascimento *</label>
-                                <input type="text" name="data_nascimento" v-model="visitante.data_nascimento" data-vv-as="data de nascimento" v-validate="'required|date_format:DD/MM/YYYY'" class="form-control">
+                                <input type="text" name="data_nascimento" v-model="visitante.data_nascimento" data-vv-as="data de nascimento" v-validate="'required|date_format:DD/MM/YYYY'" v-mask="'##/##/####'" class="form-control">
                                 <span v-show="errors.has('data_nascimento')" class="text-danger">{{ errors.first('data_nascimento') }}</span>
                             </div>
                         </div>
@@ -33,7 +38,7 @@
 
                             <div class="col-lg-6 valid">
                                 <label>Telefone com DDD *</label>
-                                <input type="text" name="telefone" v-model="visitante.telefone" v-validate="'required|numeric|min:10|max:11'" class="form-control">
+                                <input type="text" name="telefone" v-model="visitante.telefone" v-validate="'required|min:15|max:15'" v-mask="'(##) #####-####'" class="form-control">
                                 <span v-show="errors.has('telefone')" class="text-danger">{{ errors.first('telefone') }}</span>
                             </div>
                         </div>
@@ -61,27 +66,30 @@
                         </div>
 
                         <div>
-                            <button type="button" @click="define_passo('voltar')" class="btn btn-lg btn-danger ret-step">Voltar Passo</button>
-                            <button type="button" @click="enviar" class="btn btn-lg btn-info next-step last-step">Enviar</button>
+                            <div v-if="!sucesso">
+                                <button type="button" @click="define_passo('voltar')" class="btn btn-lg btn-danger ret-step">Voltar Passo</button>
+                                <button type="button" @click="enviar" class="btn btn-lg btn-info next-step last-step">Enviar</button>
+                            </div>
+                            <div v-else>
+                                <button  type="button" @click="finalizar" class="btn btn-lg btn-success next-step last-step pull-right">Finalizar</button>
+                            </div>
                         </div>
                     </fieldset>
                 </div>
             </div>
         </form>
-
-        <div v-if="carregando" id="step_sucesso" class="form-step">
-            Carregando...
-        </div>
     </div>
-
 </template>
 
 <script>
+import {STORAGE_KEY} from './main.js';
 
 export default {
+
     name: 'lp-captura',
     data () {
         return {
+
             visitante: {
                 nome: null,
                 data_nascimento: null,
@@ -95,7 +103,8 @@ export default {
             passo: 1,
             regioes: ['Norte', 'Nordeste', 'Sul', 'Sudeste', 'Centro-Oeste'],
             carregando: false,
-            data_atual: new Date('2016-06-01')
+            data_atual: new Date('2016-06-01'),
+            sucesso: false
         }
     },
     computed:
@@ -136,18 +145,20 @@ export default {
         {
             this.visitante.idade = this.define_idade();
             this.visitante.pontuacao = this.calcula_pontuacao(this.visitante.pontuacao);
-            console.log(this.visitante);
+
+            // salva local
+            this.salva_local(this.visitante);
+
+            this.sucesso = true;
         },
 
         // efetua os calculos das pontuações
         calcula_pontuacao(pontuacao_atual)
         {
-            pontuacao_atual = parseInt(pontuacao_atual);
-            
-            pontuacao_atual -= parseInt(this.desconta_por_regiao());
+            pontuacao_atual -= this.desconta_por_regiao();
             pontuacao_atual -= parseInt(this.desconta_por_idade());
 
-            console.log(pontuacao_atual);
+            console.log( pontuacao_atual);
 
             return pontuacao_atual;
         },
@@ -155,35 +166,42 @@ export default {
         // calcula por regiao
         desconta_por_regiao()
         {
+            let desconto = 0;
             switch(this.visitante.regiao)
             {
                 case 'Norte':
-                    return -5;
+                    desconto = 5;
+                break;
                 case 'Nordeste':
-                    return -4;
+                    desconto = 4;
+                break;
                 case 'Sul':
-                    return -2;
+                    desconto = 2;
+                break;
                 case 'Sudeste':
                     if(this.visitante.unidade !== 'São Paulo')
                     {
-                        return -1;
+                        desconto = 1;
                     }
-                    return 0;
+                break;
                 case 'Centro-Oeste':
-                    return -3;
+                    desconto = 3;
+                break;
             }
+            return desconto;
         },
         desconta_por_idade()
         {
+            let desconto = 0;
             if(this.visitante.idade < 18 || this.visitante.idade >= 100)
             {
-                return -5;
+                desconto = 5;
             }
             else if(this.visitante.idade >= 40 && this.visitante.idade < 99)
             {
-                return -3;
+                desconto = 3;
             }
-            return 0;
+            return desconto;
         },
 
         define_idade()
@@ -200,6 +218,19 @@ export default {
                 idade--;
             }
             return idade;
+        },
+
+        /**
+         * Salva os dados usando uma KEY combinando com o e-mail do visitante.
+         */
+        salva_local(data)
+        {
+            localStorage.setItem(STORAGE_KEY + data.email, JSON.stringify(data));
+        },
+
+        finalizar()
+        {
+            location.reload();
         }
     }
 }

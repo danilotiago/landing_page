@@ -1,7 +1,7 @@
 <template>
     <div class="row">
         <lp-captura></lp-captura>
-        <lp-chamada :titulo="'Chamada interessante para o produto'" descricao="'Mais uma informação relevante'"></lp-chamada>
+        <lp-chamada titulo="Chamada interessante para o produto" descricao="Mais uma informação relevante"></lp-chamada>
     </div>
 </template>
 
