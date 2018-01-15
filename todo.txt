@@ -1,0 +1,6 @@
+- corrigir redirect
+- corrigir mensagem alerta caso regiao sem disponibilidade
+- colocar cor de erro no input
+- pagina de sucesso
+- salvar em local storage
+- mascara para data de nascimento
